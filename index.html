@@ -1,0 +1,1501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiple Regression Analysis</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --success: #4cc9f0;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --danger: #e63946;
+            --warning: #fca311;
+            --info: #4895ef;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fb;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 2rem 0;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header-content {
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 1rem;
+        }
+        
+        .upload-area:hover {
+            border-color: var(--primary);
+            background-color: rgba(67, 97, 238, 0.05);
+        }
+        
+        .upload-area.highlight {
+            border-color: var(--primary);
+            background-color: rgba(67, 97, 238, 0.1);
+        }
+        
+        .btn {
+            display: inline-block;
+            background-color: var(--primary);
+            color: white;
+            padding: 0.7rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        
+        .btn:hover {
+            background-color: var(--secondary);
+            transform: translateY(-2px);
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+        
+        .btn-outline:hover {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger);
+        }
+        
+        .btn-danger:hover {
+            background-color: #c1121f;
+        }
+        
+        .btn-sm {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.9rem;
+        }
+        
+        .btn-info {
+            background-color: var(--info);
+        }
+        
+        .btn-info:hover {
+            background-color: #3a7bd5;
+        }
+        
+        select, input {
+            width: 100%;
+            padding: 0.7rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .data-preview {
+            overflow-x: auto;
+            max-height: 300px;
+            margin-bottom: 1rem;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #f1f5fd;
+            font-weight: 600;
+        }
+        
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .result-card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .equation {
+            font-family: 'Courier New', monospace;
+            background-color: #f8f9fa;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+            font-size: 1.1rem;
+            line-height: 1.8;
+        }
+        
+        .coef-table {
+            width: 100%;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+        
+        .coef-table th {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .significance {
+            font-weight: bold;
+        }
+        
+        .sig-0 { color: var(--danger); }
+        .sig-1 { color: var(--warning); }
+        .sig-2 { color: #2a9d8f; }
+        .sig-3 { color: var(--success); }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 1rem;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .alert {
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+        }
+        
+        .alert-warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .alert-success {
+            background-color: #d1edff;
+            color: #0c5460;
+            border: 1px solid #b8daff;
+        }
+        
+        .alert-info {
+            background-color: #d1edff;
+            color: #0c5460;
+            border: 1px solid #b8daff;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        
+        /* Improved predictor selection styles */
+        .predictor-selection {
+            margin-top: 1rem;
+        }
+        
+        .predictor-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 0.5rem;
+            background: #f8f9fa;
+        }
+        
+        .predictor-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .predictor-item:hover {
+            background-color: #e9ecef;
+        }
+        
+        .predictor-item.selected {
+            background-color: #d1edff;
+            border: 1px solid #b8daff;
+        }
+        
+        .predictor-checkbox {
+            width: 18px;
+            height: 18px;
+        }
+        
+        .selection-controls {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .selected-predictors {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .selected-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .selected-tag {
+            background: var(--primary);
+            color: white;
+            padding: 0.3rem 0.7rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .categorical-tag {
+            background: var(--info);
+        }
+        
+        .remove-tag {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            padding: 0;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .remove-tag:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .empty-message {
+            color: #6c757d;
+            font-style: italic;
+        }
+        
+        .dummy-variables-info {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid var(--info);
+        }
+        
+        .dummy-table {
+            width: 100%;
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+        }
+        
+        .dummy-table th {
+            background-color: var(--info);
+            color: white;
+        }
+        
+        .category-info {
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .predictor-list {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <h1>Multiple Regression Analysis</h1>
+                <p class="subtitle">Upload your CSV data, select variables, and perform regression analysis</p>
+            </div>
+        </header>
+        
+        <div class="card">
+            <h2 class="card-title">📁 Data Upload</h2>
+            <div id="uploadArea" class="upload-area">
+                <p>Drag & drop your CSV file here or click to browse</p>
+                <p style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.7;">Supported format: CSV with headers</p>
+                <input type="file" id="fileInput" accept=".csv" style="display: none;">
+                <button class="btn" style="margin-top: 1rem;" onclick="document.getElementById('fileInput').click()">Browse Files</button>
+            </div>
+            
+            <div id="dataPreview" class="hidden">
+                <h3>Data Preview</h3>
+                <div class="data-preview">
+                    <table id="previewTable">
+                        <thead>
+                            <tr id="previewHeader"></tr>
+                        </thead>
+                        <tbody id="previewBody"></tbody>
+                    </table>
+                </div>
+                <button id="resetData" class="btn btn-danger">Reset Data</button>
+            </div>
+        </div>
+        
+        <div id="analysisSection" class="hidden">
+            <div class="card">
+                <h2 class="card-title">⚙️ Analysis Setup</h2>
+                <div class="alert alert-warning" id="missingDataAlert">
+                    <strong>Warning:</strong> Your dataset contains missing values. Rows with missing values will be automatically excluded from analysis.
+                </div>
+                
+                <div class="alert alert-info" id="categoricalInfo" style="display: none;">
+                    <strong>Info:</strong> Categorical predictors will be automatically converted to dummy variables. The first category will be used as the reference level.
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                    <div>
+                        <label for="responseVar"><strong>Response Variable (Y):</strong></label>
+                        <select id="responseVar"></select>
+                    </div>
+                    
+                    <div class="predictor-selection">
+                        <label><strong>Predictor Variables (X):</strong></label>
+                        <p style="font-size: 0.9rem; color: #6c757d; margin-bottom: 0.5rem;">Click variables to select/deselect</p>
+                        
+                        <div class="selection-controls">
+                            <button class="btn btn-sm btn-outline" onclick="selectAllPredictors()">Select All</button>
+                            <button class="btn btn-sm btn-outline" onclick="deselectAllPredictors()">Deselect All</button>
+                            <button class="btn btn-sm btn-outline" onclick="selectNumericPredictors()">Select Numeric Only</button>
+                            <button class="btn btn-sm btn-info" onclick="showDummyInfo()">Dummy Variables Info</button>
+                        </div>
+                        
+                        <div class="predictor-list" id="predictorList">
+                            <!-- Predictor items will be inserted here -->
+                        </div>
+                        
+                        <div class="selected-predictors">
+                            <strong>Selected Predictors:</strong>
+                            <div class="selected-tags" id="selectedTags">
+                                <span class="empty-message">No predictors selected</span>
+                            </div>
+                        </div>
+                        
+                        <div id="dummyVariablesInfo" class="dummy-variables-info hidden">
+                            <h4>Dummy Variable Coding</h4>
+                            <p>For categorical variables, the app creates dummy variables using reference coding:</p>
+                            <ul>
+                                <li>For a categorical variable with K categories, K-1 dummy variables are created</li>
+                                <li>The first category is used as the reference level</li>
+                                <li>Each dummy variable represents the difference from the reference level</li>
+                            </ul>
+                            <div id="dummyVariablesPreview"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button id="runRegression" class="btn" style="margin-top: 1rem;">Run Regression Analysis</button>
+            </div>
+            
+            <div id="resultsSection" class="hidden">
+                <div class="card">
+                    <h2 class="card-title">📊 Regression Results</h2>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="rSquared">0.000</div>
+                            <div class="stat-label">R-squared</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="adjRSquared">0.000</div>
+                            <div class="stat-label">Adj. R-squared</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="fStatistic">0.000</div>
+                            <div class="stat-label">F-statistic</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="pValue">0.000</div>
+                            <div class="stat-label">P-value</div>
+                        </div>
+                    </div>
+                    
+                    <h3 style="margin-top: 1.5rem;">Regression Equation</h3>
+                    <div class="equation" id="regressionEquation">
+                        Y = β₀ + β₁X₁ + β₂X₂ + ...
+                    </div>
+                    
+                    <h3 style="margin-top: 1.5rem;">Coefficient Estimates</h3>
+                    <table class="coef-table">
+                        <thead>
+                            <tr>
+                                <th>Variable</th>
+                                <th>Coefficient</th>
+                                <th>Std. Error</th>
+                                <th>t-value</th>
+                                <th>p-value</th>
+                                <th>Significance</th>
+                            </tr>
+                        </thead>
+                        <tbody id="coefficientsTable">
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="results-grid">
+                    <div class="card">
+                        <h2 class="card-title">📈 Actual vs Predicted</h2>
+                        <div class="chart-container">
+                            <canvas id="actualVsPredictedChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h2 class="card-title">📉 Residuals Plot</h2>
+                        <div class="chart-container">
+                            <canvas id="residualsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let csvData = [];
+        let columnHeaders = [];
+        let columnTypes = {};
+        let columnCategories = {};
+        let regressionResults = null;
+        let selectedPredictors = new Set();
+        let dummyVariablesMap = {};
+        let charts = {
+            actualVsPredicted: null,
+            residuals: null
+        };
+        
+        // DOM elements
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const dataPreview = document.getElementById('dataPreview');
+        const previewHeader = document.getElementById('previewHeader');
+        const previewBody = document.getElementById('previewBody');
+        const analysisSection = document.getElementById('analysisSection');
+        const responseVar = document.getElementById('responseVar');
+        const predictorList = document.getElementById('predictorList');
+        const selectedTags = document.getElementById('selectedTags');
+        const runRegression = document.getElementById('runRegression');
+        const resultsSection = document.getElementById('resultsSection');
+        const resetData = document.getElementById('resetData');
+        const missingDataAlert = document.getElementById('missingDataAlert');
+        const categoricalInfo = document.getElementById('categoricalInfo');
+        const dummyVariablesInfo = document.getElementById('dummyVariablesInfo');
+        const dummyVariablesPreview = document.getElementById('dummyVariablesPreview');
+        
+        // Event listeners
+        fileInput.addEventListener('change', handleFileSelect);
+        uploadArea.addEventListener('dragover', handleDragOver);
+        uploadArea.addEventListener('dragleave', handleDragLeave);
+        uploadArea.addEventListener('drop', handleFileDrop);
+        runRegression.addEventListener('click', performRegression);
+        resetData.addEventListener('click', resetApp);
+        
+        // File handling functions
+        function handleDragOver(e) {
+            e.preventDefault();
+            uploadArea.classList.add('highlight');
+        }
+        
+        function handleDragLeave(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('highlight');
+        }
+        
+        function handleFileDrop(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('highlight');
+            
+            const files = e.dataTransfer.files;
+            if (files.length) {
+                fileInput.files = files;
+                handleFileSelect();
+            }
+        }
+        
+        function handleFileSelect() {
+            const file = fileInput.files[0];
+            if (!file) return;
+            
+            Papa.parse(file, {
+                header: true,
+                dynamicTyping: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    if (results.errors.length) {
+                        alert('Error parsing CSV: ' + results.errors[0].message);
+                        return;
+                    }
+                    
+                    csvData = results.data;
+                    columnHeaders = results.meta.fields;
+                    detectColumnTypes();
+                    detectCategories();
+                    
+                    displayDataPreview();
+                    setupAnalysisSection();
+                }
+            });
+        }
+        
+        function detectColumnTypes() {
+            columnTypes = {};
+            columnHeaders.forEach(header => {
+                // Check if column contains only numbers
+                let isNumeric = true;
+                let hasValidData = false;
+                
+                for (let i = 0; i < Math.min(100, csvData.length); i++) {
+                    const value = csvData[i][header];
+                    if (value !== null && value !== undefined && value !== '') {
+                        hasValidData = true;
+                        if (typeof value !== 'number' || isNaN(value)) {
+                            isNumeric = false;
+                            break;
+                        }
+                    }
+                }
+                
+                columnTypes[header] = (isNumeric && hasValidData) ? 'numeric' : 'categorical';
+            });
+        }
+        
+        function detectCategories() {
+            columnCategories = {};
+            columnHeaders.forEach(header => {
+                if (columnTypes[header] === 'categorical') {
+                    const uniqueValues = new Set();
+                    csvData.forEach(row => {
+                        const value = row[header];
+                        if (value !== null && value !== undefined && value !== '') {
+                            uniqueValues.add(value.toString());
+                        }
+                    });
+                    columnCategories[header] = Array.from(uniqueValues).sort();
+                }
+            });
+        }
+        
+        function displayDataPreview() {
+            // Clear previous preview
+            previewHeader.innerHTML = '';
+            previewBody.innerHTML = '';
+            
+            // Add headers
+            columnHeaders.forEach(header => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                previewHeader.appendChild(th);
+            });
+            
+            // Add first 5 rows of data
+            for (let i = 0; i < Math.min(5, csvData.length); i++) {
+                const row = document.createElement('tr');
+                
+                columnHeaders.forEach(header => {
+                    const td = document.createElement('td');
+                    td.textContent = csvData[i][header];
+                    row.appendChild(td);
+                });
+                
+                previewBody.appendChild(row);
+            }
+            
+            // Show data preview
+            dataPreview.classList.remove('hidden');
+        }
+        
+        function setupAnalysisSection() {
+            // Clear previous options and selections
+            responseVar.innerHTML = '';
+            predictorList.innerHTML = '';
+            selectedPredictors.clear();
+            updateSelectedTags();
+            dummyVariablesInfo.classList.add('hidden');
+            
+            // Check for missing data
+            const hasMissingData = checkForMissingData();
+            missingDataAlert.classList.toggle('hidden', !hasMissingData);
+            
+            // Check for categorical predictors
+            const hasCategorical = columnHeaders.some(header => 
+                header !== responseVar.value && columnTypes[header] === 'categorical'
+            );
+            categoricalInfo.style.display = hasCategorical ? 'block' : 'none';
+            
+            // Add options for response and predictor variables
+            columnHeaders.forEach(header => {
+                // Response variable option
+                const responseOption = document.createElement('option');
+                responseOption.value = header;
+                responseOption.textContent = header;
+                if (columnTypes[header] !== 'numeric') {
+                    responseOption.disabled = true;
+                    responseOption.textContent += ' (non-numeric - cannot be response)';
+                }
+                responseVar.appendChild(responseOption);
+                
+                // Predictor list item
+                const predictorItem = document.createElement('div');
+                predictorItem.className = 'predictor-item';
+                predictorItem.dataset.column = header;
+                predictorItem.dataset.type = columnTypes[header];
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'predictor-checkbox';
+                checkbox.checked = false;
+                if (header === responseVar.value) {
+                    checkbox.disabled = true;
+                }
+                
+                const label = document.createElement('span');
+                if (columnTypes[header] === 'numeric') {
+                    label.innerHTML = `${header} <small style="color: #6c757d;">(numeric)</small>`;
+                } else {
+                    const categoryCount = columnCategories[header] ? columnCategories[header].length : 0;
+                    label.innerHTML = `${header} <small style="color: var(--info);">(categorical, ${categoryCount} categories)</small>`;
+                }
+                
+                predictorItem.appendChild(checkbox);
+                predictorItem.appendChild(label);
+                
+                predictorItem.addEventListener('click', (e) => {
+                    if (header !== responseVar.value) {
+                        e.stopPropagation();
+                        togglePredictor(header, predictorItem, checkbox);
+                    }
+                });
+                
+                predictorList.appendChild(predictorItem);
+            });
+            
+            // Show analysis section
+            analysisSection.classList.remove('hidden');
+        }
+        
+        function togglePredictor(column, item, checkbox) {
+            if (selectedPredictors.has(column)) {
+                selectedPredictors.delete(column);
+                item.classList.remove('selected');
+                checkbox.checked = false;
+            } else {
+                selectedPredictors.add(column);
+                item.classList.add('selected');
+                checkbox.checked = true;
+            }
+            updateSelectedTags();
+            updateDummyVariablesPreview();
+        }
+        
+        function updateSelectedTags() {
+            selectedTags.innerHTML = '';
+            
+            if (selectedPredictors.size === 0) {
+                selectedTags.innerHTML = '<span class="empty-message">No predictors selected</span>';
+                return;
+            }
+            
+            selectedPredictors.forEach(predictor => {
+                const tag = document.createElement('div');
+                tag.className = `selected-tag ${columnTypes[predictor] === 'categorical' ? 'categorical-tag' : ''}`;
+                
+                const text = document.createElement('span');
+                text.textContent = predictor;
+                if (columnTypes[predictor] === 'categorical') {
+                    const categoryCount = columnCategories[predictor] ? columnCategories[predictor].length : 0;
+                    text.textContent += ` (${categoryCount} cats)`;
+                }
+                
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'remove-tag';
+                removeBtn.innerHTML = '×';
+                removeBtn.title = 'Remove predictor';
+                removeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    removePredictor(predictor);
+                });
+                
+                tag.appendChild(text);
+                tag.appendChild(removeBtn);
+                selectedTags.appendChild(tag);
+            });
+        }
+        
+        function removePredictor(predictor) {
+            selectedPredictors.delete(predictor);
+            
+            // Update the predictor list item
+            const predictorItem = document.querySelector(`.predictor-item[data-column="${predictor}"]`);
+            if (predictorItem) {
+                predictorItem.classList.remove('selected');
+                const checkbox = predictorItem.querySelector('.predictor-checkbox');
+                if (checkbox) checkbox.checked = false;
+            }
+            
+            updateSelectedTags();
+            updateDummyVariablesPreview();
+        }
+        
+        function selectAllPredictors() {
+            columnHeaders.forEach(header => {
+                if (header !== responseVar.value) {
+                    selectedPredictors.add(header);
+                    const predictorItem = document.querySelector(`.predictor-item[data-column="${header}"]`);
+                    if (predictorItem) {
+                        predictorItem.classList.add('selected');
+                        const checkbox = predictorItem.querySelector('.predictor-checkbox');
+                        if (checkbox) checkbox.checked = true;
+                    }
+                }
+            });
+            updateSelectedTags();
+            updateDummyVariablesPreview();
+        }
+        
+        function deselectAllPredictors() {
+            selectedPredictors.clear();
+            document.querySelectorAll('.predictor-item').forEach(item => {
+                item.classList.remove('selected');
+                const checkbox = item.querySelector('.predictor-checkbox');
+                if (checkbox) checkbox.checked = false;
+            });
+            updateSelectedTags();
+            updateDummyVariablesPreview();
+        }
+        
+        function selectNumericPredictors() {
+            deselectAllPredictors();
+            columnHeaders.forEach(header => {
+                if (header !== responseVar.value && columnTypes[header] === 'numeric') {
+                    selectedPredictors.add(header);
+                    const predictorItem = document.querySelector(`.predictor-item[data-column="${header}"]`);
+                    if (predictorItem) {
+                        predictorItem.classList.add('selected');
+                        const checkbox = predictorItem.querySelector('.predictor-checkbox');
+                        if (checkbox) checkbox.checked = true;
+                    }
+                }
+            });
+            updateSelectedTags();
+            updateDummyVariablesPreview();
+        }
+        
+        function showDummyInfo() {
+            dummyVariablesInfo.classList.toggle('hidden');
+            if (!dummyVariablesInfo.classList.contains('hidden')) {
+                updateDummyVariablesPreview();
+            }
+        }
+        
+        function updateDummyVariablesPreview() {
+            const categoricalPredictors = Array.from(selectedPredictors).filter(
+                p => columnTypes[p] === 'categorical'
+            );
+            
+            if (categoricalPredictors.length === 0) {
+                dummyVariablesPreview.innerHTML = '<p>No categorical predictors selected.</p>';
+                return;
+            }
+            
+            let html = '<p><strong>Selected categorical variables and their categories:</strong></p>';
+            
+            categoricalPredictors.forEach(predictor => {
+                const categories = columnCategories[predictor];
+                if (categories && categories.length > 0) {
+                    html += `<div class="category-info">
+                        <strong>${predictor}:</strong> ${categories.join(', ')}
+                        <br><small>Reference level: <em>${categories[0]}</em></small>
+                        <br><small>Will create ${categories.length - 1} dummy variable(s): ${categories.slice(1).map(cat => `${predictor}_${cat}`).join(', ')}</small>
+                    </div>`;
+                }
+            });
+            
+            dummyVariablesPreview.innerHTML = html;
+        }
+        
+        function checkForMissingData() {
+            for (let i = 0; i < csvData.length; i++) {
+                for (const header of columnHeaders) {
+                    if (csvData[i][header] === null || csvData[i][header] === undefined || 
+                        csvData[i][header] === '') {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+        
+        function performRegression() {
+            const responseVariable = responseVar.value;
+            const predictorVariables = Array.from(selectedPredictors);
+            
+            if (!responseVariable) {
+                alert('Please select a response variable');
+                return;
+            }
+            
+            if (predictorVariables.length === 0) {
+                alert('Please select at least one predictor variable');
+                return;
+            }
+            
+            if (predictorVariables.includes(responseVariable)) {
+                alert('Response variable cannot be used as a predictor');
+                return;
+            }
+            
+            if (columnTypes[responseVariable] !== 'numeric') {
+                alert('Response variable must be numeric');
+                return;
+            }
+            
+            // Filter out rows with missing data and prepare data
+            const { cleanData, X, predictorNames, dummyMap } = prepareRegressionData(responseVariable, predictorVariables);
+            
+            if (cleanData.length < predictorNames.length + 1) {
+                alert('Not enough data points for regression. Need at least ' + (predictorNames.length + 1) + ' complete observations.');
+                return;
+            }
+            
+            // Perform multiple regression
+            try {
+                // Destroy existing charts before creating new ones
+                destroyCharts();
+                
+                regressionResults = multipleRegression(X, cleanData.map(row => row[responseVariable]));
+                dummyVariablesMap = dummyMap;
+                displayRegressionResults(responseVariable, predictorNames, cleanData.length);
+                createCharts(cleanData, responseVariable, regressionResults);
+            } catch (error) {
+                alert('Error performing regression: ' + error.message);
+                console.error(error);
+            }
+        }
+        
+        function destroyCharts() {
+            // Destroy existing charts if they exist
+            if (charts.actualVsPredicted) {
+                charts.actualVsPredicted.destroy();
+                charts.actualVsPredicted = null;
+            }
+            if (charts.residuals) {
+                charts.residuals.destroy();
+                charts.residuals = null;
+            }
+        }
+        
+        function prepareRegressionData(responseVariable, predictorVariables) {
+            const cleanData = [];
+            const dummyMap = {};
+            const allPredictorNames = [];
+            
+            // First, filter data and identify categorical variables
+            csvData.forEach(row => {
+                // Check if row has all required data
+                let isValid = true;
+                
+                // Check response variable
+                if (row[responseVariable] === null || row[responseVariable] === undefined || 
+                    row[responseVariable] === '' || isNaN(row[responseVariable])) {
+                    isValid = false;
+                }
+                
+                // Check predictor variables
+                predictorVariables.forEach(predictor => {
+                    if (row[predictor] === null || row[predictor] === undefined || row[predictor] === '') {
+                        isValid = false;
+                    }
+                });
+                
+                if (isValid) {
+                    cleanData.push(row);
+                }
+            });
+            
+            // Build predictor matrix and names
+            const X = [];
+            
+            cleanData.forEach(row => {
+                const predictors = [1]; // Start with 1 for intercept
+                const rowPredictorNames = ['Intercept'];
+                
+                predictorVariables.forEach(predictor => {
+                    if (columnTypes[predictor] === 'numeric') {
+                        // Numeric variable - use as is
+                        predictors.push(row[predictor]);
+                        rowPredictorNames.push(predictor);
+                    } else {
+                        // Categorical variable - create dummy variables
+                        const categories = columnCategories[predictor];
+                        const currentValue = row[predictor].toString();
+                        
+                        if (!dummyMap[predictor]) {
+                            dummyMap[predictor] = {
+                                categories: categories,
+                                reference: categories[0],
+                                dummies: categories.slice(1)
+                            };
+                        }
+                        
+                        // Create dummy variables (skip reference category)
+                        categories.slice(1).forEach(category => {
+                            predictors.push(category === currentValue ? 1 : 0);
+                            rowPredictorNames.push(`${predictor}_${category}`);
+                        });
+                    }
+                });
+                
+                X.push(predictors);
+                
+                // Collect all predictor names (only once)
+                if (allPredictorNames.length === 0) {
+                    allPredictorNames.push(...rowPredictorNames);
+                }
+            });
+            
+            return {
+                cleanData: cleanData,
+                X: X,
+                predictorNames: allPredictorNames,
+                dummyMap: dummyMap
+            };
+        }
+        
+        function multipleRegression(X, y) {
+            // Convert to math.js matrices
+            const X_matrix = math.matrix(X);
+            const y_matrix = math.matrix(y);
+            
+            // Calculate coefficients: β = (X'X)^-1 X'y
+            const X_transpose = math.transpose(X_matrix);
+            const XtX = math.multiply(X_transpose, X_matrix);
+            const XtX_inv = math.inv(XtX);
+            const Xty = math.multiply(X_transpose, y_matrix);
+            const coefficients = math.multiply(XtX_inv, Xty);
+            
+            // Calculate predictions and residuals
+            const predictions = math.multiply(X_matrix, coefficients);
+            const residuals = math.subtract(y_matrix, predictions);
+            
+            // Calculate R-squared - FIXED: Ensure it's never negative
+            const y_mean = math.mean(y);
+            const totalSumSquares = math.sum(math.map(y, yi => math.pow(yi - y_mean, 2)));
+            const residualSumSquares = math.sum(math.map(residuals, ri => math.pow(ri, 2)));
+            
+            // Ensure R-squared is between 0 and 1
+            let rSquared = 0;
+            if (totalSumSquares > 0) {
+                rSquared = Math.max(0, Math.min(1, 1 - (residualSumSquares / totalSumSquares)));
+            }
+            
+            // Calculate adjusted R-squared - FIXED: Ensure it's never negative
+            const n = y.length;
+            const k = X[0].length - 1; // Number of predictors (excluding intercept)
+            let adjRSquared = 0;
+            if (n > k + 1 && totalSumSquares > 0) {
+                adjRSquared = Math.max(0, Math.min(1, 1 - ((1 - rSquared) * (n - 1) / (n - k - 1))));
+            }
+            
+            // Calculate standard errors of coefficients
+            const mse = residualSumSquares / Math.max(1, (n - k - 1));
+            const coeffVariance = math.multiply(mse, XtX_inv);
+            
+            // Use math.map to apply sqrt element-wise to the diagonal
+            const coeffVarianceDiag = math.diag(coeffVariance);
+            const standardErrors = math.map(coeffVarianceDiag, val => Math.sqrt(Math.max(0, val)));
+            
+            // Calculate t-statistics and p-values
+            const tStats = [];
+            const pValues = [];
+            
+            for (let i = 0; i < coefficients.size()[0]; i++) {
+                const se = standardErrors.get([i]);
+                let t = 0;
+                if (se > 0) {
+                    t = coefficients.get([i]) / se;
+                }
+                tStats.push(t);
+                
+                // Two-tailed t-test - FIXED p-value calculation
+                const df = Math.max(1, n - k - 1);
+                const pValue = 2 * (1 - math.abs(studentTCDF(math.abs(t), df)));
+                pValues.push(Math.max(0, Math.min(1, pValue))); // Ensure p-value is between 0 and 1
+            }
+            
+            // Calculate F-statistic - FIXED: Ensure it's never negative
+            let fStatistic = 0;
+            let fPValue = 1;
+            
+            if (k > 0 && residualSumSquares > 0 && n > k + 1) {
+                const regressionSumSquares = Math.max(0, totalSumSquares - residualSumSquares);
+                const meanRegressionSumSquares = regressionSumSquares / k;
+                const meanResidualSumSquares = residualSumSquares / (n - k - 1);
+                
+                if (meanResidualSumSquares > 0) {
+                    fStatistic = Math.max(0, meanRegressionSumSquares / meanResidualSumSquares);
+                    fPValue = Math.max(0, Math.min(1, 1 - fisherFCDF(fStatistic, k, n - k - 1)));
+                }
+            }
+            
+            return {
+                coefficients: coefficients.valueOf(),
+                predictions: predictions.valueOf(),
+                residuals: residuals.valueOf(),
+                rSquared: rSquared,
+                adjRSquared: adjRSquared,
+                standardErrors: standardErrors.valueOf(),
+                tStats: tStats,
+                pValues: pValues,
+                fStatistic: fStatistic,
+                fPValue: fPValue,
+                n: n,
+                k: k
+            };
+        }
+        
+        // FIXED: More robust Student's t CDF approximation
+        function studentTCDF(t, df) {
+            if (df <= 0) return 0.5;
+            if (t === 0) return 0.5;
+            
+            // For large t values, return appropriate limits
+            if (Math.abs(t) > 100) {
+                return t > 0 ? 1 : 0;
+            }
+            
+            const x = df / (df + t * t);
+            try {
+                const ib = incompleteBeta(x, df / 2, 0.5);
+                
+                if (t < 0) {
+                    return 0.5 * ib;
+                } else {
+                    return 1 - 0.5 * ib;
+                }
+            } catch (e) {
+                // Fallback for numerical issues
+                return t > 0 ? 1 : 0;
+            }
+        }
+        
+        // FIXED: More robust incomplete Beta function
+        function incompleteBeta(x, a, b) {
+            if (x < 0) return 0;
+            if (x > 1) return 1;
+            if (x === 0) return 0;
+            if (x === 1) return 1;
+            if (a <= 0 || b <= 0) return 0.5;
+            
+            const maxIterations = 200;
+            const epsilon = 1e-15;
+            
+            let am = 1;
+            let bm = 1;
+            let az = 1;
+            
+            let qab = a + b;
+            let qap = a + 1;
+            let qam = a - 1;
+            let bz = 1 - qab * x / qap;
+            
+            for (let m = 1; m <= maxIterations; m++) {
+                const em = m;
+                const tem = em + em;
+                let d = em * (b - m) * x / ((qam + tem) * (a + tem));
+                let ap = az + d * am;
+                let bp = bz + d * bm;
+                d = -(a + em) * (qab + em) * x / ((a + tem) * (qap + tem));
+                const app = ap + d * az;
+                const bpp = bp + d * bz;
+                const aold = az;
+                am = ap / bpp;
+                bm = bp / bpp;
+                az = app / bpp;
+                bz = 1;
+                
+                if (Math.abs(az - aold) < epsilon * Math.abs(az)) {
+                    return az;
+                }
+            }
+            
+            // If we reach here, return the best estimate
+            return az;
+        }
+        
+        // FIXED: More robust F-distribution CDF
+        function fisherFCDF(f, df1, df2) {
+            if (f <= 0) return 0;
+            if (df1 <= 0 || df2 <= 0) return 0.5;
+            
+            // For very large f values
+            if (f > 1000) return 1;
+            
+            const x = df2 / (df2 + df1 * f);
+            try {
+                return incompleteBeta(x, df2 / 2, df1 / 2);
+            } catch (e) {
+                // Fallback for numerical issues
+                return f > 1 ? 1 : 0;
+            }
+        }
+        
+        function displayRegressionResults(responseVar, predictorNames, sampleSize) {
+            // Update statistics - FIXED: Ensure values are properly bounded
+            document.getElementById('rSquared').textContent = Math.max(0, regressionResults.rSquared).toFixed(4);
+            document.getElementById('adjRSquared').textContent = Math.max(0, regressionResults.adjRSquared).toFixed(4);
+            document.getElementById('fStatistic').textContent = Math.max(0, regressionResults.fStatistic).toFixed(4);
+            document.getElementById('pValue').textContent = regressionResults.fPValue.toFixed(6);
+            
+            // Build regression equation
+            let equation = `${responseVar} = `;
+            const coefficients = regressionResults.coefficients;
+            
+            for (let i = 0; i < coefficients.length; i++) {
+                const coef = coefficients[i];
+                const sign = coef >= 0 ? (i === 0 ? '' : ' + ') : ' - ';
+                const absCoef = Math.abs(coef);
+                
+                if (i === 0) {
+                    // Intercept
+                    equation += `${coef.toFixed(4)}`;
+                } else {
+                    // Predictor coefficient
+                    const predictor = predictorNames[i];
+                    equation += `${sign} ${absCoef.toFixed(4)} × ${predictor}`;
+                }
+            }
+            
+            document.getElementById('regressionEquation').textContent = equation;
+            
+            // Build coefficients table
+            const coefficientsTable = document.getElementById('coefficientsTable');
+            coefficientsTable.innerHTML = '';
+            
+            for (let i = 0; i < coefficients.length; i++) {
+                const row = document.createElement('tr');
+                
+                // Variable name
+                const varCell = document.createElement('td');
+                varCell.textContent = predictorNames[i];
+                row.appendChild(varCell);
+                
+                // Coefficient
+                const coefCell = document.createElement('td');
+                coefCell.textContent = coefficients[i].toFixed(6);
+                row.appendChild(coefCell);
+                
+                // Standard error
+                const seCell = document.createElement('td');
+                seCell.textContent = regressionResults.standardErrors[i].toFixed(6);
+                row.appendChild(seCell);
+                
+                // t-statistic
+                const tCell = document.createElement('td');
+                tCell.textContent = regressionResults.tStats[i].toFixed(4);
+                row.appendChild(tCell);
+                
+                // p-value
+                const pCell = document.createElement('td');
+                const pValue = regressionResults.pValues[i];
+                pCell.textContent = pValue < 0.000001 ? '< 0.000001' : pValue.toFixed(6);
+                row.appendChild(pCell);
+                
+                // Significance
+                const sigCell = document.createElement('td');
+                let sigClass = 'sig-0';
+                let sigText = '';
+                
+                if (pValue < 0.001) {
+                    sigClass = 'sig-3';
+                    sigText = '***';
+                } else if (pValue < 0.01) {
+                    sigClass = 'sig-2';
+                    sigText = '**';
+                } else if (pValue < 0.05) {
+                    sigClass = 'sig-1';
+                    sigText = '*';
+                } else if (pValue < 0.1) {
+                    sigClass = 'sig-0';
+                    sigText = '.';
+                }
+                
+                sigCell.className = `significance ${sigClass}`;
+                sigCell.textContent = sigText;
+                row.appendChild(sigCell);
+                
+                coefficientsTable.appendChild(row);
+            }
+            
+            // Show results section
+            resultsSection.classList.remove('hidden');
+        }
+        
+        function createCharts(data, responseVar, results) {
+            // Actual vs Predicted chart
+            const actualVsPredictedCtx = document.getElementById('actualVsPredictedChart').getContext('2d');
+            
+            // Extract actual and predicted values
+            const actualValues = data.map(row => row[responseVar]);
+            const predictedValues = results.predictions;
+            
+            // Calculate min and max for consistent axis scaling
+            const allValues = [...actualValues, ...predictedValues];
+            const minVal = Math.min(...allValues);
+            const maxVal = Math.max(...allValues);
+            
+            charts.actualVsPredicted = new Chart(actualVsPredictedCtx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Data Points',
+                        data: actualValues.map((val, i) => ({x: val, y: predictedValues[i]})),
+                        backgroundColor: 'rgba(67, 97, 238, 0.7)',
+                        borderColor: 'rgba(67, 97, 238, 1)',
+                        pointRadius: 5,
+                        pointHoverRadius: 7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Actual Values'
+                            },
+                            min: minVal,
+                            max: maxVal
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Predicted Values'
+                            },
+                            min: minVal,
+                            max: maxVal
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Actual vs Predicted Values'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Actual: ${context.parsed.x.toFixed(2)}, Predicted: ${context.parsed.y.toFixed(2)}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Residuals chart
+            const residualsCtx = document.getElementById('residualsChart').getContext('2d');
+            
+            charts.residuals = new Chart(residualsCtx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Residuals',
+                        data: predictedValues.map((val, i) => ({x: val, y: results.residuals[i]})),
+                        backgroundColor: 'rgba(252, 163, 17, 0.7)',
+                        borderColor: 'rgba(252, 163, 17, 1)',
+                        pointRadius: 5,
+                        pointHoverRadius: 7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Predicted Values'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Residuals'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Residuals vs Predicted Values'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Predicted: ${context.parsed.x.toFixed(2)}, Residual: ${context.parsed.y.toFixed(2)}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function resetApp() {
+            // Reset all state
+            csvData = [];
+            columnHeaders = [];
+            columnTypes = {};
+            columnCategories = {};
+            regressionResults = null;
+            selectedPredictors.clear();
+            dummyVariablesMap = {};
+            
+            // Destroy charts
+            destroyCharts();
+            
+            // Reset UI
+            fileInput.value = '';
+            dataPreview.classList.add('hidden');
+            analysisSection.classList.add('hidden');
+            resultsSection.classList.add('hidden');
+            dummyVariablesInfo.classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
